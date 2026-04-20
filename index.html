@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Restaurant CRM</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 2rem; max-width: 900px; }
+      .card { border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+      input { width: 100%; padding: .5rem; margin: .2rem 0 .5rem; }
+      button { padding: .5rem .8rem; cursor: pointer; }
+      pre { background:#f7f7f7; padding:1rem; border-radius:8px; overflow:auto; }
+    </style>
+  </head>
+  <body>
+    <h1>Restaurant CRM</h1>
+    <p>รองรับทั้งเส้นทาง API แบบ <code>/api/*</code> และ <code>/*</code> เพื่อกันปัญหา deploy บน Vercel</p>
+
+    <div class="card">
+      <h3>เพิ่มลูกค้า</h3>
+      <input id="name" placeholder="ชื่อ" />
+      <input id="phone" placeholder="เบอร์โทร" />
+      <button onclick="createCustomer()">เพิ่มลูกค้า</button>
+    </div>
+
+    <div class="card">
+      <h3>บันทึกการซื้อ</h3>
+      <input id="p_phone" placeholder="เบอร์โทร" />
+      <input id="amount" placeholder="ยอดซื้อ" type="number" step="0.01" />
+      <input id="earn_rate" placeholder="บาทต่อแต้ม" type="number" value="10" />
+      <input id="use_points" placeholder="ใช้แต้ม" type="number" value="0" />
+      <button onclick="purchase()">บันทึกการซื้อ</button>
+    </div>
+
+    <div class="card">
+      <h3>ลูกค้าทั้งหมด</h3>
+      <button onclick="listCustomers()">โหลดลูกค้า</button>
+    </div>
+
+    <pre id="output">พร้อมใช้งาน</pre>
+
+    <script>
+      const out = document.getElementById('output');
+
+      async function apiCall(path, options = {}) {
+        const bases = ['/api', ''];
+        let lastErr = null;
+
+        for (const base of bases) {
+          try {
+            const res = await fetch(`${base}${path}`, {
+              headers: { 'Content-Type': 'application/json' },
+              ...options,
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(JSON.stringify(data));
+            return data;
+          } catch (e) {
+            lastErr = e;
+          }
+        }
+        throw lastErr || new Error('API unavailable');
+      }
+
+      async function createCustomer() {
+        try {
+          const data = await apiCall('/customers', {
+            method: 'POST',
+            body: JSON.stringify({
+              name: document.getElementById('name').value,
+              phone: document.getElementById('phone').value,
+            }),
+          });
+          out.textContent = JSON.stringify(data, null, 2);
+        } catch (e) {
+          out.textContent = e.message;
+        }
+      }
+
+      async function purchase() {
+        try {
+          const data = await apiCall('/purchase', {
+            method: 'POST',
+            body: JSON.stringify({
+              phone: document.getElementById('p_phone').value,
+              amount: Number(document.getElementById('amount').value),
+              earn_rate: Number(document.getElementById('earn_rate').value),
+              use_points: Number(document.getElementById('use_points').value),
+            }),
+          });
+          out.textContent = JSON.stringify(data, null, 2);
+        } catch (e) {
+          out.textContent = e.message;
+        }
+      }
+
+      async function listCustomers() {
+        try {
+          const data = await apiCall('/customers');
+          out.textContent = JSON.stringify(data, null, 2);
+        } catch (e) {
+          out.textContent = e.message;
+        }
+      }
+    </script>
+  </body>
+</html>
